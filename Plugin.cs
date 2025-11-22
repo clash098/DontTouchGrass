@@ -1,31 +1,18 @@
-﻿using BepInEx;
+using BepInEx;
+using HarmonyLib;
 using UnityEngine;
-using System.Diagnostics;
 
 namespace DontTouchGrass
 {
+    [HarmonyPatch]
     [BepInPlugin("com.uhclash.gorillatag.DontTouchGrass", "Don't Touch Grass", "1.0.0")]
     public class Plugin : BaseUnityPlugin
-    { 
-        void Update()
+    {
+        void Awake() => Harmony.CreateAndPatchAll(GetType().Assembly, Info.Metadata.GUID);
+        [HarmonyPatch(typeof(VRRig), nameof(VRRig.PlayHandTapLocal)), HarmonyPostfix]
+        static void GrassPatch(VRRig __instance, int audioClipIndex)
         {
-            if (!GorillaTagger.Instance) return;
-
-            CheckHandForGrass(GorillaTagger.Instance.leftHandTransform);
-            CheckHandForGrass(GorillaTagger.Instance.rightHandTransform);
-        }
-
-        void CheckHandForGrass(Transform handTransform)
-        {
-            RaycastHit hit;
-            if (Physics.Raycast(handTransform.position, -handTransform.up, out hit, 0.2f))
-            {
-                if (hit.collider.gameObject.name.ToLower() == "pit ground")
-                {
-                    System.Threading.Thread.Sleep(100);
-                    Process.GetCurrentProcess().Kill();
-                }
-            }
+            if (__instance.isLocal && audioClipIndex == 7) Application.Quit();
         }
     }
 }
