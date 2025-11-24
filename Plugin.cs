@@ -4,15 +4,19 @@ using UnityEngine;
 
 namespace DontTouchGrass
 {
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(VRRig), nameof(VRRig.PlayHandTapLocal))]
     [BepInPlugin("com.uhclash.gorillatag.DontTouchGrass", "Don't Touch Grass", "1.0.0")]
     public class Plugin : BaseUnityPlugin
     {
-        void Awake() => Harmony.CreateAndPatchAll(GetType().Assembly, Info.Metadata.GUID);
-        [HarmonyPatch(typeof(VRRig), nameof(VRRig.PlayHandTapLocal)), HarmonyPostfix]
-        static void GrassPatch(VRRig __instance, int audioClipIndex)
+        private void Awake() => Harmony.CreateAndPatchAll(GetType().Assembly, Info.Metadata.GUID);
+        private static bool Prefix(VRRig __instance, int audioClipIndex)
         {
-            if (__instance.isLocal && audioClipIndex == 7) Application.Quit();
+            if (!__instance.isLocal || audioClipIndex != 7) return true;
+            
+            Debug.Log("we fucking exploded into smithereens");
+            UnityEngine.Diagnostics.Utils.ForceCrash(0);
+            
+            return false;
         }
     }
 }
