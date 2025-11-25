@@ -1,22 +1,28 @@
 using BepInEx;
 using HarmonyLib;
-using UnityEngine;
 
 namespace DontTouchGrass
 {
-    [HarmonyPatch(typeof(VRRig), nameof(VRRig.PlayHandTapLocal))]
-    [BepInPlugin("com.uhclash.gorillatag.DontTouchGrass", "Don't Touch Grass", "1.0.0")]
+    
+    [BepInPlugin("com.uhclash.gorillatag.DontTouchGrass", "Don't Touch Grass", "1.0.1")]
     public class Plugin : BaseUnityPlugin
     {
-        private void Awake() => Harmony.CreateAndPatchAll(GetType().Assembly, Info.Metadata.GUID);
-        private static bool Prefix(VRRig __instance, int audioClipIndex)
+        public static bool _enabled = true;
+
+        public void OnEnable() => _enabled = true;
+
+        public void OnDisable() => _enabled = false;
+
+        private void Awake() => Harmony.CreateAndPatchAll(GetType().Assembly, "com.uhclash.gorillatag.DontTouchGrass");
+    }
+
+    [HarmonyPatch(typeof(VRRig), nameof(VRRig.PlayHandTapLocal))]
+    public class Patchs
+    {
+        [HarmonyPrefix]
+        private static void Prefix(VRRig __instance, int audioClipIndex, bool isLeftHand, float tapVolume)
         {
-            if (!__instance.isLocal || audioClipIndex != 7) return true;
-            
-            Debug.Log("we fucking exploded into smithereens");
-            UnityEngine.Diagnostics.Utils.ForceCrash(0);
-            
-            return false;
+            if (Plugin._enabled && __instance.isLocal && audioClipIndex == 7) UnityEngine.Diagnostics.Utils.ForceCrash(UnityEngine.Diagnostics.ForcedCrashCategory.AccessViolation);
         }
     }
 }
