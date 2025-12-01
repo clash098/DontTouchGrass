@@ -1,28 +1,39 @@
 using BepInEx;
 using HarmonyLib;
+using System.Reflection;
+using GorillaLocomotion;
+using UnityEngine;
+using UnityEngine.Diagnostics;
 
 namespace DontTouchGrass
 {
-    
     [BepInPlugin("com.uhclash.gorillatag.DontTouchGrass", "Don't Touch Grass", "1.0.1")]
     public class Plugin : BaseUnityPlugin
     {
-        public static bool _enabled = true;
+        private Harmony harmony;
 
-        public void OnEnable() => _enabled = true;
+        private void OnEnable()
+        {
+            this.harmony = new Harmony("com.uhclash.gorillatag.DontTouchGrass");
+            this.harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
 
-        public void OnDisable() => _enabled = false;
-
-        private void Awake() => Harmony.CreateAndPatchAll(GetType().Assembly, "com.uhclash.gorillatag.DontTouchGrass");
+        private void OnDisable()
+        {
+            if (this.harmony == null) return;
+            this.harmony.UnpatchSelf();
+            this.harmony = (Harmony) null;
+        }
     }
 
-    [HarmonyPatch(typeof(VRRig), nameof(VRRig.PlayHandTapLocal))]
-    public class Patchs
+    [HarmonyPatch(typeof (VRRig), "SetHandEffectData")]
+    public class SetHandEffectDataPatch
     {
         [HarmonyPrefix]
-        private static void Prefix(VRRig __instance, int audioClipIndex, bool isLeftHand, float tapVolume)
+        private static void Prefix(VRRig __instance, object effectContext, int audioClipIndex, bool isDownTap, bool isLeftHand, StiltID stiltID, float handTapVolume, float handTapSpeed, Vector3 dirFromHitToHand)
         {
-            if (Plugin._enabled && __instance.isLocal && audioClipIndex == 7) UnityEngine.Diagnostics.Utils.ForceCrash(UnityEngine.Diagnostics.ForcedCrashCategory.AccessViolation);
+            if (!__instance.isLocal || audioClipIndex != 7) return;
+            UnityEngine.Diagnostics.Utils.ForceCrash(ForcedCrashCategory.AccessViolation);
         }
     }
 }
